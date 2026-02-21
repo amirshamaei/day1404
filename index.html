@@ -1,10 +1,12 @@
-<!DOCTYPE html><html lang="fa" dir="rtl"><head>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>فهرست کشتگان اعتراضات دی ۱۴۰۴</title>
-    <link rel="stylesheet" href="css/leaflet.css">
-    <script src="js/leaflet.js"></script>
-    <script src="js/leaflet-heat.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Tahoma, Arial, sans-serif; }
@@ -290,7 +292,7 @@
         <div class="legend-item"><span class="legend-dot" style="width:14px;height:14px;background:#8B0000;"></span> +۱۰۰</div>
         <div class="legend-item"><span class="legend-dot" style="width:12px;height:12px;background:#B22222;"></span> ۵۰-۱۰۰</div>
         <div class="legend-item"><span class="legend-dot" style="width:10px;height:10px;background:#DC143C;"></span> ۲۰-۵۰</div>
-        <div class="legend-item"><span class="legend-dot" style="width:8px;height:8px;background:#CD5C5C;"></span> <۲۰</div>
+        <div class="legend-item"><span class="legend-dot" style="width:8px;height:8px;background:#CD5C5C;"></span> &lt;۲۰</div>
     </div>
     
     <div class="date-panel collapsed" id="date-panel">
@@ -381,7 +383,8 @@
         max-width:90%;max-height:80%;overflow:auto;direction:rtl;font-family:Tahoma;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
             <h3 style="margin:0;color:#8B0000;">افراد نقشه‌نشده (شهر ناشناخته)</h3>
-            <button onclick="document.getElementById('unmapped-panel').style.display='none'" style="background:#ccc;border:none;padding:5px 15px;border-radius:5px;cursor:pointer;">بستن</button>
+            <button onclick="document.getElementById('unmapped-panel').style.display='none'" 
+                style="background:#ccc;border:none;padding:5px 15px;border-radius:5px;cursor:pointer;">بستن</button>
         </div>
         <p style="font-size:12px;color:#666;margin-bottom:10px;">این افراد به دلیل نام شهر ناشناخته روی نقشه نمایش داده نشدند. می‌توانید نام شهر را در فایل data.csv اصلاح کنید.</p>
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -806,7 +809,7 @@
                 <div class="search-result-item" onclick="flyToCity('${(p.city || '').replace(/'/g, "\\'")}')">
                     <div class="search-result-name">${p.number ? intToPersian(parseInt(p.number)) + '. ' : ''}${highlighted}</div>
                     <div class="search-result-meta">
-                        ${p.place ? '📍 ' + p.place : ''}${p.date ? ' � 📅 ' + p.date : ''}${p.city ? ' � 🏙️ ' + p.city : ''}
+                        ${p.place ? '📍 ' + p.place : ''}${p.date ? ' &nbsp; 📅 ' + p.date : ''}${p.city ? ' &nbsp; 🏙️ ' + p.city : ''}
                     </div>
                 </div>
             `;
@@ -997,7 +1000,7 @@
     const map = L.map('map').setView([32.4279, 53.6880], 6);
     
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '� OpenStreetMap, � CartoDB'
+        attribution: '&copy; OpenStreetMap, &copy; CartoDB'
     }).addTo(map);
 
     // Load and process CSV
@@ -1124,6 +1127,5 @@
                 <p style="font-size:12px;margin-top:10px;">Make sure data.csv is in the same folder as this HTML file.</p>`;
         });
     </script>
-
-
-</body></html>
+</body>
+</html>
