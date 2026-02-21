@@ -1,0 +1,1129 @@
+<!DOCTYPE html><html lang="fa" dir="rtl"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فهرست کشتگان اعتراضات دی ۱۴۰۴</title>
+    <link rel="stylesheet" href="css/leaflet.css">
+    <script src="js/leaflet.js"></script>
+    <script src="js/leaflet-heat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Tahoma, Arial, sans-serif; }
+        #map { width: 100%; height: 100vh; }
+        
+        .title-box {
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999;
+            background: rgba(255,255,255,0.95); padding: 12px 25px; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); text-align: center; min-width: 320px;
+        }
+        .title-box h3 { margin: 0; color: #8B0000; direction: rtl; font-size: 16px; }
+        .title-box p { margin: 4px 0 0; color: #666; font-size: 11px; }
+        .title-box a { color: #0088cc; text-decoration: none; }
+
+        .search-wrapper {
+            margin-top: 8px; position: relative;
+        }
+        .search-input {
+            width: 100%; padding: 7px 12px 7px 30px; border: 1.5px solid #ddd;
+            border-radius: 8px; font-family: Tahoma, Arial, sans-serif; font-size: 12px;
+            direction: rtl; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+            background: #fafafa;
+        }
+        .search-input:focus { border-color: #8B0000; box-shadow: 0 0 0 2px rgba(139,0,0,0.1); background: #fff; }
+        .search-icon {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            font-size: 13px; color: #aaa; pointer-events: none;
+        }
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 10002;
+            background: white; border: 1px solid #ddd; border-top: none;
+            border-radius: 0 0 8px 8px; max-height: 260px; overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none;
+            font-size: 11px; direction: rtl;
+        }
+        .search-results.active { display: block; }
+        .search-result-item {
+            padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: default;
+        }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:hover { background: #fef5f5; }
+        .search-result-name { font-weight: bold; color: #333; }
+        .search-result-name mark { background: #ffe082; color: #333; border-radius: 2px; padding: 0 1px; }
+        .search-result-meta { color: #888; font-size: 10px; margin-top: 2px; }
+        .search-result-count {
+            padding: 8px 12px; color: #999; font-size: 10px; text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .legend {
+            position: fixed; bottom: 30px; right: 10px; z-index: 9999;
+            background: rgba(255,255,255,0.95); padding: 12px; border-radius: 8px;
+            font-size: 11px; direction: rtl;
+        }
+        .legend-item { margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+        .legend-dot { border-radius: 50%; display: inline-block; }
+        
+        .popup-header {
+            background: #8B0000; color: white; padding: 8px; margin: -13px -20px 10px -20px;
+            text-align: center; direction: rtl;
+        }
+        .popup-header b { font-size: 15px; }
+        .popup-list {
+            max-height: 250px; overflow-y: auto; font-size: 12px; direction: rtl;
+        }
+        .popup-item {
+            padding: 4px 0; border-bottom: 1px solid #eee;
+        }
+        .popup-item b { color: #333; }
+        .popup-date { color: #888; font-size: 10px; }
+        
+        #unmapped-list tr:nth-child(even) { background: #f9f9f9; }
+        #unmapped-list td { padding: 6px 8px; border: 1px solid #ddd; }
+        
+        .loading {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px; border-radius: 10px; z-index: 10000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3); text-align: center;
+        }
+
+        /* Gender Dashboard Panel */
+        .gender-panel {
+            position: fixed; top: 80px; left: 12px; z-index: 9999;
+            background: rgba(255,255,255,0.97); border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 220px;
+            font-size: 12px; direction: rtl; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .gender-panel.collapsed { width: auto; height: auto; border-radius: 10px; cursor: pointer; }
+        .gender-panel.collapsed .gp-content { display: none; }
+        .gender-panel.collapsed .gp-toggle-icon { transform: rotate(180deg); }
+        
+        .gp-header {
+            background: linear-gradient(135deg, #4a1942, #8B0000);
+            color: white; padding: 10px 14px; display: flex;
+            justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .gp-header b { font-size: 13px; }
+        .gp-toggle-icon { transition: transform 0.3s; font-size: 14px; }
+        .gp-content { padding: 14px; }
+        
+        .gp-bar-container {
+            width: 100%; height: 22px; border-radius: 11px;
+            background: #eee; overflow: hidden; display: flex;
+            margin: 8px 0 12px;
+        }
+        .gp-bar-male {
+            height: 100%; background: linear-gradient(90deg, #1a5276, #2980b9);
+            transition: width 0.8s ease; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 10px; font-weight: bold;
+        }
+        .gp-bar-female {
+            height: 100%; background: linear-gradient(90deg, #922b6e, #c0392b);
+            transition: width 0.8s ease; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 10px; font-weight: bold;
+        }
+        
+        .gp-stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .gp-stat-row:last-child { border-bottom: none; }
+        .gp-stat-label { display: flex; align-items: center; gap: 6px; }
+        .gp-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .gp-stat-value { font-weight: bold; color: #333; font-size: 13px; }
+        .gp-stat-pct { color: #888; font-size: 11px; margin-right: 4px; }
+        
+        .gp-donut-container { display: flex; justify-content: center; margin: 10px 0; }
+        .gp-total { text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+        .gp-total-num { font-size: 22px; font-weight: bold; color: #8B0000; }
+        .gp-total-label { font-size: 10px; color: #888; }
+
+        /* Date Dashboard Panel */
+        .date-panel {
+            position: fixed; top: 176px; left: 12px; z-index: 9999;
+            background: rgba(255,255,255,0.97); border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 260px;
+            font-size: 12px; direction: rtl; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .date-panel.collapsed { width: auto; height: auto; border-radius: 10px; cursor: pointer; overflow: hidden; }
+        .date-panel.collapsed .dp-content { display: none; }
+        .date-panel.collapsed .dp-toggle-icon { transform: rotate(180deg); }
+
+        .dp-header {
+            background: linear-gradient(135deg, #1a3a4a, #2c3e50);
+            color: white; padding: 10px 14px; display: flex;
+            justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .dp-header b { font-size: 13px; }
+        .dp-toggle-icon { transition: transform 0.3s; font-size: 14px; }
+        .dp-content { padding: 14px; max-height: 70vh; overflow-y: auto; }
+
+        .dp-chart { width: 100%; margin: 6px 0 10px; }
+        .dp-bar-row {
+            display: flex; align-items: center; gap: 6px; margin: 4px 0;
+            font-size: 11px;
+        }
+        .dp-bar-label {
+            width: 72px; text-align: left; flex-shrink: 0;
+            color: #444; font-size: 10px; white-space: nowrap;
+        }
+        .dp-bar-track {
+            flex: 1; height: 18px; background: #f0f0f0; border-radius: 9px;
+            overflow: hidden; position: relative;
+        }
+        .dp-bar-fill {
+            height: 100%; border-radius: 9px;
+            transition: width 0.8s ease;
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 0 6px; color: white; font-size: 9px; font-weight: bold;
+            min-width: 0;
+        }
+        .dp-bar-count {
+            width: 32px; text-align: center; flex-shrink: 0;
+            font-weight: bold; color: #333; font-size: 11px;
+        }
+        .dp-summary {
+            display: flex; justify-content: space-around; text-align: center;
+            margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee;
+        }
+        .dp-summary-item {}
+        .dp-summary-num { font-size: 18px; font-weight: bold; color: #2c3e50; }
+        .dp-summary-label { font-size: 9px; color: #888; }
+        .dp-section-title {
+            font-size: 10px; color: #999; margin: 10px 0 4px;
+            padding-top: 6px; border-top: 1px solid #eee;
+        }
+        .dp-peak-badge {
+            display: inline-block; background: #e74c3c; color: white;
+            font-size: 9px; padding: 1px 6px; border-radius: 8px; margin-right: 4px;
+        }
+
+        /* City Dashboard Panel */
+        .city-panel {
+            position: fixed; top: 128px; left: 12px; z-index: 9999;
+            background: rgba(255,255,255,0.97); border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 240px;
+            font-size: 12px; direction: rtl; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .city-panel.collapsed { width: auto; height: auto; border-radius: 10px; cursor: pointer; overflow: hidden; }
+        .city-panel.collapsed .cp-content { display: none; }
+        .city-panel.collapsed .cp-toggle-icon { transform: rotate(180deg); }
+
+        .cp-header {
+            background: linear-gradient(135deg, #0b3d2e, #1a6b4a);
+            color: white; padding: 10px 14px; display: flex;
+            justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .cp-header b { font-size: 13px; }
+        .cp-toggle-icon { transition: transform 0.3s; font-size: 14px; }
+        .cp-content { padding: 10px 14px 14px; }
+
+        .cp-summary {
+            display: flex; justify-content: space-around; text-align: center;
+            margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;
+        }
+        .cp-summary-num { font-size: 18px; font-weight: bold; color: #1a6b4a; }
+        .cp-summary-label { font-size: 9px; color: #888; }
+
+        .cp-search {
+            width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px;
+            font-family: Tahoma, Arial, sans-serif; font-size: 11px; direction: rtl;
+            margin-bottom: 8px; outline: none; transition: border-color 0.2s;
+        }
+        .cp-search:focus { border-color: #1a6b4a; }
+
+        .cp-list {
+            max-height: 45vh; overflow-y: auto; padding-left: 2px;
+        }
+        .cp-list::-webkit-scrollbar { width: 4px; }
+        .cp-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+        .cp-row {
+            display: flex; align-items: center; gap: 6px; padding: 4px 0;
+            border-bottom: 1px solid #f5f5f5; font-size: 11px;
+        }
+        .cp-row:last-child { border-bottom: none; }
+        .cp-rank {
+            width: 20px; text-align: center; flex-shrink: 0;
+            color: #aaa; font-size: 10px;
+        }
+        .cp-rank.top3 { color: #e67e22; font-weight: bold; }
+        .cp-city-name {
+            flex: 1; color: #333; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .cp-city-bar-track {
+            width: 60px; height: 12px; background: #f0f0f0; border-radius: 6px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .cp-city-bar-fill {
+            height: 100%; border-radius: 6px; transition: width 0.6s ease;
+        }
+        .cp-city-count {
+            width: 30px; text-align: left; flex-shrink: 0;
+            font-weight: bold; color: #333; font-size: 11px;
+        }
+        .cp-no-result {
+            text-align: center; color: #bbb; padding: 12px; font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="title-box">
+        <h3>فهرست کشتگان اعتراضات دی ۱۴۰۴</h3>
+        <p id="stats">Loading...</p>
+        <p style="font-size:10px;margin-top:4px;">
+            <a href="https://t.me/RememberTheirNames" target="_blank">@RememberTheirNames</a>
+        </p>
+        <div class="search-wrapper">
+            <input type="text" class="search-input" id="name-search" placeholder="جستجوی نام..." oninput="searchNames()" onfocus="searchNames()">
+            <span class="search-icon">🔍</span>
+            <div class="search-results" id="search-results"></div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <b>راهنما</b>
+        <div class="legend-item"><span class="legend-dot" style="width:14px;height:14px;background:#8B0000;"></span> +۱۰۰</div>
+        <div class="legend-item"><span class="legend-dot" style="width:12px;height:12px;background:#B22222;"></span> ۵۰-۱۰۰</div>
+        <div class="legend-item"><span class="legend-dot" style="width:10px;height:10px;background:#DC143C;"></span> ۲۰-۵۰</div>
+        <div class="legend-item"><span class="legend-dot" style="width:8px;height:8px;background:#CD5C5C;"></span> <۲۰</div>
+    </div>
+    
+    <div class="date-panel collapsed" id="date-panel">
+        <div class="dp-header" onclick="toggleDatePanel()">
+            <b>📅 آمار تاریخی</b>
+            <span class="dp-toggle-icon" id="dp-toggle">▶</span>
+        </div>
+        <div class="dp-content" id="dp-content">
+            <div class="dp-summary">
+                <div class="dp-summary-item">
+                    <div class="dp-summary-num" id="dp-total-days">—</div>
+                    <div class="dp-summary-label">روز ثبت‌شده</div>
+                </div>
+                <div class="dp-summary-item">
+                    <div class="dp-summary-num" id="dp-peak-count">—</div>
+                    <div class="dp-summary-label">بیشترین در یک روز</div>
+                </div>
+                <div class="dp-summary-item">
+                    <div class="dp-summary-num" id="dp-unknown-count">—</div>
+                    <div class="dp-summary-label">بدون تاریخ دقیق</div>
+                </div>
+            </div>
+            <div class="dp-chart" id="dp-chart"></div>
+        </div>
+    </div>
+
+    <div class="gender-panel collapsed" id="gender-panel">
+        <div class="gp-header" onclick="toggleGenderPanel()">
+            <b>📊 آمار جنسیتی</b>
+            <span class="gp-toggle-icon" id="gp-toggle">◀</span>
+        </div>
+        <div class="gp-content" id="gp-content">
+            <div class="gp-donut-container">
+                <svg id="gp-donut" width="110" height="110" viewBox="0 0 110 110"></svg>
+            </div>
+            <div class="gp-bar-container" id="gp-bar">
+                <div class="gp-bar-male" id="gp-bar-male" style="width:0%"></div>
+                <div class="gp-bar-female" id="gp-bar-female" style="width:0%"></div>
+            </div>
+            <div class="gp-stat-row">
+                <span class="gp-stat-label"><span class="gp-dot" style="background:#2980b9;"></span> مرد</span>
+                <span><span class="gp-stat-pct" id="gp-male-pct">—</span> <span class="gp-stat-value" id="gp-male-count">—</span></span>
+            </div>
+            <div class="gp-stat-row">
+                <span class="gp-stat-label"><span class="gp-dot" style="background:#c0392b;"></span> زن</span>
+                <span><span class="gp-stat-pct" id="gp-female-pct">—</span> <span class="gp-stat-value" id="gp-female-count">—</span></span>
+            </div>
+            <div class="gp-stat-row">
+                <span class="gp-stat-label"><span class="gp-dot" style="background:#bbb;"></span> شناسایی‌شده</span>
+                <span><span class="gp-stat-value" id="gp-identified">—</span></span>
+            </div>
+            <div class="gp-total">
+                <div class="gp-total-num" id="gp-total">—</div>
+                <div class="gp-total-label">مجموع افراد</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="city-panel collapsed" id="city-panel">
+        <div class="cp-header" onclick="toggleCityPanel()">
+            <b>🏙️ آمار شهرها</b>
+            <span class="cp-toggle-icon" id="cp-toggle">◀</span>
+        </div>
+        <div class="cp-content" id="cp-content">
+            <div class="cp-summary">
+                <div>
+                    <div class="cp-summary-num" id="cp-total-cities">—</div>
+                    <div class="cp-summary-label">شهر</div>
+                </div>
+                <div>
+                    <div class="cp-summary-num" id="cp-total-mapped">—</div>
+                    <div class="cp-summary-label">نفر شناسایی‌شده</div>
+                </div>
+                <div>
+                    <div class="cp-summary-num" id="cp-avg-per-city">—</div>
+                    <div class="cp-summary-label">میانگین هر شهر</div>
+                </div>
+            </div>
+            <input type="text" class="cp-search" id="cp-search" placeholder="جستجوی شهر..." oninput="filterCityList()">
+            <div class="cp-list" id="cp-list"></div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">در حال بارگذاری...</div>
+    
+    <div id="unmapped-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        z-index:10001;background:white;padding:20px;border-radius:10px;box-shadow:0 5px 30px rgba(0,0,0,0.4);
+        max-width:90%;max-height:80%;overflow:auto;direction:rtl;font-family:Tahoma;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+            <h3 style="margin:0;color:#8B0000;">افراد نقشه‌نشده (شهر ناشناخته)</h3>
+            <button onclick="document.getElementById('unmapped-panel').style.display='none'" style="background:#ccc;border:none;padding:5px 15px;border-radius:5px;cursor:pointer;">بستن</button>
+        </div>
+        <p style="font-size:12px;color:#666;margin-bottom:10px;">این افراد به دلیل نام شهر ناشناخته روی نقشه نمایش داده نشدند. می‌توانید نام شهر را در فایل data.csv اصلاح کنید.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="padding:8px;border:1px solid #ddd;text-align:right;">شماره</th>
+                    <th style="padding:8px;border:1px solid #ddd;text-align:right;">نام</th>
+                    <th style="padding:8px;border:1px solid #ddd;text-align:right;">شهر (در فایل)</th>
+                    <th style="padding:8px;border:1px solid #ddd;text-align:right;">تاریخ</th>
+                </tr>
+            </thead>
+            <tbody id="unmapped-list"></tbody>
+        </table>
+    </div>
+
+    <script>
+    // ========== Gender Name Dictionary ==========
+    // Global data cache for search
+    let allPeopleData = [];
+
+    // Female Persian first names - used to classify gender from CSV names
+    // If the CSV data changes, gender stats auto-recalculate on page load
+    const FEMALE_NAMES = new Set([
+        'آتنا','آذر','آذین','آرزو','آرنیکا','آریانا','آرینا','آنیسا','آنیلا',
+        'آیدا','آیناز','اسرا','اعظم','افسانه','الهام','الهه','الینا','انیس','اکرم',
+        'بهار','بهاره','بیتا','تانیا','تینا','ثمین','ثنا',
+        'جمیله','حدیثه','حمیده','حنانه','خدیجه',
+        'دنیا','رزیتا','رقیه','روبینا','رویا','ریحانه',
+        'زهرا','زهره','زیبا','زینب',
+        'ساجده','سارا','ساغر','ساناز','ساینا','سبا','ستاره','ستایش',
+        'سحر','سعیده','سمانه','سمیرا','سمیه','سودا','سودابه',
+        'سوفیا','سونا','سونیا','سوگند','سپیده','سیما',
+        'شبنم','شعله','شقایق','شکوفه','شهلا','شیلان','شیما','شیوا',
+        'صالحه','صبا','صغری','صفورا','صنم','صهبا',
+        'طاهره','طیبه','عارفه','عاطفه','عذرا','عسل',
+        'غزل','فائزه','فاطمه','فرزانه','فرشته','فروزان','فریده','فهیمه',
+        'لیلا','مائده','ماندانا','محدثه','مرضیه','مریم','معصومه',
+        'ملکه','ملیحه','ملینا','ملیکا','منصوره','منیژه',
+        'مهرنوش','مهسا','مهنا','مهین','مونا','مژگان','مینا',
+        'نادیا','نازآفرین','نازلی','نازنین','نازنین‌زهرا','ناهید',
+        'ندا','نرگس','نسترن','نسرین','نسیم','نوشین','نگار','نگین',
+        'نیلوفر','نیوشا','هاجر','هانیه',
+        'پانته‌آ','پردیس','پرستو','پرنیا','پرنیان','پروانه','پروین','پریا','پریسا',
+        'کتایون','کلثوم','کیمیا','گلاله','گلسا',
+        'یاسمین','یسنا','یلدا'
+    ]);
+
+    function getFirstName(fullName) {
+        // Remove parenthetical aliases like (نجات) or (رها)
+        const clean = fullName.replace(/\(.*?\)/g, '').trim();
+        const parts = clean.split(/\s+/);
+        return parts[0] || '';
+    }
+
+    function classifyGender(fullName) {
+        const firstName = getFirstName(fullName);
+        if (!firstName) return 'unknown';
+        return FEMALE_NAMES.has(firstName) ? 'female' : 'male';
+    }
+
+    function updateGenderPanel(data) {
+        let male = 0, female = 0;
+        data.forEach(row => {
+            const name = row['نام'] || row['name'] || '';
+            if (!name) return;
+            const gender = classifyGender(name);
+            if (gender === 'female') female++;
+            else if (gender === 'male') male++;
+        });
+
+        const total = male + female;
+        const malePct = total > 0 ? (male / total * 100).toFixed(1) : 0;
+        const femalePct = total > 0 ? (female / total * 100).toFixed(1) : 0;
+
+        document.getElementById('gp-male-count').textContent = male.toLocaleString('fa-IR');
+        document.getElementById('gp-female-count').textContent = female.toLocaleString('fa-IR');
+        document.getElementById('gp-male-pct').textContent = `(${malePct}٪)`;
+        document.getElementById('gp-female-pct').textContent = `(${femalePct}٪)`;
+        document.getElementById('gp-identified').textContent = total.toLocaleString('fa-IR');
+        document.getElementById('gp-total').textContent = data.length.toLocaleString('fa-IR');
+
+        // Animated bar
+        setTimeout(() => {
+            document.getElementById('gp-bar-male').style.width = malePct + '%';
+            document.getElementById('gp-bar-male').textContent = malePct > 15 ? malePct + '٪' : '';
+            document.getElementById('gp-bar-female').style.width = femalePct + '%';
+            document.getElementById('gp-bar-female').textContent = femalePct > 5 ? femalePct + '٪' : '';
+        }, 200);
+
+        // Draw donut chart
+        drawDonut(male, female);
+    }
+
+    function drawDonut(male, female) {
+        const total = male + female;
+        if (total === 0) return;
+        const svg = document.getElementById('gp-donut');
+        const cx = 55, cy = 55, r = 42, strokeW = 16;
+        const circumference = 2 * Math.PI * r;
+        const maleArc = (male / total) * circumference;
+        const femaleArc = (female / total) * circumference;
+
+        svg.innerHTML = `
+            <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e8e8e8" stroke-width="${strokeW}"/>
+            <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2980b9" stroke-width="${strokeW}"
+                stroke-dasharray="${maleArc} ${circumference}" stroke-dashoffset="0"
+                transform="rotate(-90 ${cx} ${cy})" style="transition: stroke-dasharray 1s ease;">
+                <animate attributeName="stroke-dasharray" from="0 ${circumference}" to="${maleArc} ${circumference}" dur="0.8s" fill="freeze"/>
+            </circle>
+            <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#c0392b" stroke-width="${strokeW}"
+                stroke-dasharray="${femaleArc} ${circumference}" stroke-dashoffset="-${maleArc}"
+                transform="rotate(-90 ${cx} ${cy})" style="transition: stroke-dasharray 1s ease;">
+                <animate attributeName="stroke-dasharray" from="0 ${circumference}" to="${femaleArc} ${circumference}" dur="0.8s" fill="freeze" begin="0.3s"/>
+            </circle>
+            <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="18" font-weight="bold" fill="#333">${total}</text>
+            <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="9" fill="#888">نفر شناسایی‌شده</text>
+        `;
+    }
+
+    function toggleGenderPanel() {
+        const panel = document.getElementById('gender-panel');
+        panel.classList.toggle('collapsed');
+    }
+
+    // ========== Date Panel Logic ==========
+    const PERSIAN_DIGIT_MAP = { '۰':0,'۱':1,'۲':2,'۳':3,'۴':4,'۵':5,'۶':6,'۷':7,'۸':8,'۹':9 };
+    const PERSIAN_MONTHS_ORDER = [
+        'فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور',
+        'مهر','آبان','آذر','دی','بهمن','اسفند'
+    ];
+
+    function persianToInt(str) {
+        if (!str) return NaN;
+        let result = '';
+        for (const ch of str) {
+            if (PERSIAN_DIGIT_MAP[ch] !== undefined) result += PERSIAN_DIGIT_MAP[ch];
+            else if (ch >= '0' && ch <= '9') result += ch;
+        }
+        return result ? parseInt(result, 10) : NaN;
+    }
+
+    function parseDate(dateStr) {
+        if (!dateStr || !dateStr.trim()) return { type: 'empty' };
+        const s = dateStr.trim();
+
+        // Try: "day month year" e.g. "۱۸ دی ۱۴۰۴"
+        const full = s.match(/^([۰-۹0-9]+)\s+(\S+)\s+([۰-۹0-9]+)$/);
+        if (full) {
+            const day = persianToInt(full[1]);
+            const month = full[2];
+            const year = persianToInt(full[3]);
+            if (!isNaN(day) && !isNaN(year) && PERSIAN_MONTHS_ORDER.includes(month)) {
+                return { type: 'full', day, month, year, sortKey: year * 10000 + PERSIAN_MONTHS_ORDER.indexOf(month) * 100 + day };
+            }
+        }
+
+        // Try: "month year" e.g. "دی ۱۴۰۴"
+        const monthYear = s.match(/^(\S+)\s+([۰-۹0-9]+)$/);
+        if (monthYear) {
+            const month = monthYear[1];
+            const year = persianToInt(monthYear[2]);
+            if (!isNaN(year) && PERSIAN_MONTHS_ORDER.includes(month)) {
+                return { type: 'month_only', month, year, sortKey: year * 10000 + PERSIAN_MONTHS_ORDER.indexOf(month) * 100 };
+            }
+        }
+
+        // Try: just year e.g. "۱۴۰۴"
+        const justYear = persianToInt(s);
+        if (!isNaN(justYear) && justYear > 1300) {
+            return { type: 'year_only', year: justYear, sortKey: justYear * 10000 };
+        }
+
+        // Unknown format
+        return { type: 'unknown', raw: s };
+    }
+
+    function intToPersian(n) {
+        const map = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+        return String(n).split('').map(d => map[parseInt(d)] || d).join('');
+    }
+
+    function updateDatePanel(data) {
+        const dateCounts = {};     // "day month year" => count
+        const monthOnlyCounts = {}; // "month year" => count
+        let emptyCount = 0;
+        let unknownCount = 0;
+
+        data.forEach(row => {
+            const dateStr = row['تاریخ کشته‌شدن'] || row['date'] || '';
+            const parsed = parseDate(dateStr);
+
+            if (parsed.type === 'full') {
+                const key = `${parsed.day}|${parsed.month}|${parsed.year}`;
+                dateCounts[key] = (dateCounts[key] || 0) + 1;
+            } else if (parsed.type === 'month_only') {
+                const key = `${parsed.month}|${parsed.year}`;
+                monthOnlyCounts[key] = (monthOnlyCounts[key] || 0) + 1;
+            } else if (parsed.type === 'empty') {
+                emptyCount++;
+            } else {
+                unknownCount++;
+            }
+        });
+
+        // Sort full dates by sortKey
+        const sortedDates = Object.entries(dateCounts).map(([key, count]) => {
+            const [day, month, year] = key.split('|');
+            const d = parseInt(day), y = parseInt(year);
+            return {
+                label: `${intToPersian(d)} ${month} ${intToPersian(y)}`,
+                count,
+                sortKey: y * 10000 + PERSIAN_MONTHS_ORDER.indexOf(month) * 100 + d
+            };
+        }).sort((a, b) => a.sortKey - b.sortKey);
+
+        // Sort month-only
+        const sortedMonthOnly = Object.entries(monthOnlyCounts).map(([key, count]) => {
+            const [month, year] = key.split('|');
+            const y = parseInt(year);
+            return {
+                label: `${month} ${intToPersian(y)}`,
+                count,
+                sortKey: y * 10000 + PERSIAN_MONTHS_ORDER.indexOf(month) * 100
+            };
+        }).sort((a, b) => a.sortKey - b.sortKey);
+
+        const impreciseTotal = sortedMonthOnly.reduce((s, d) => s + d.count, 0) + emptyCount + unknownCount;
+
+        // Find peak
+        const maxCount = sortedDates.length > 0 ? Math.max(...sortedDates.map(d => d.count)) : 0;
+        const peakDate = sortedDates.find(d => d.count === maxCount);
+
+        // Update summary
+        document.getElementById('dp-total-days').textContent = intToPersian(sortedDates.length);
+        document.getElementById('dp-peak-count').textContent = intToPersian(maxCount);
+        document.getElementById('dp-unknown-count').textContent = intToPersian(impreciseTotal);
+
+        // Build chart
+        const barColors = [
+            '#2980b9','#2471a3','#1a5276','#1b4f72','#154360',
+            '#1f618d','#2e86c1','#3498db','#5dade2','#85c1e9',
+            '#21618c','#1c5985','#1a4d72','#174b6d','#145a8a'
+        ];
+
+        let html = '';
+
+        // Full dates section
+        if (sortedDates.length > 0) {
+            html += `<div style="font-size:10px;color:#666;margin-bottom:6px;font-weight:bold;">📌 تاریخ‌های دقیق</div>`;
+            sortedDates.forEach((d, i) => {
+                const pct = maxCount > 0 ? (d.count / maxCount * 100) : 0;
+                const isPeak = d.count === maxCount;
+                const color = barColors[i % barColors.length];
+                html += `
+                    <div class="dp-bar-row">
+                        <span class="dp-bar-label">${isPeak ? '<span class="dp-peak-badge">اوج</span>' : ''}${d.label}</span>
+                        <div class="dp-bar-track">
+                            <div class="dp-bar-fill" style="width:${pct}%;background:${color};">${d.count > 30 ? intToPersian(d.count) : ''}</div>
+                        </div>
+                        <span class="dp-bar-count">${intToPersian(d.count)}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Month-only section
+        if (sortedMonthOnly.length > 0) {
+            html += `<div class="dp-section-title">📎 فقط ماه (بدون روز دقیق)</div>`;
+            sortedMonthOnly.forEach(d => {
+                const pct = maxCount > 0 ? (d.count / maxCount * 100) : 0;
+                html += `
+                    <div class="dp-bar-row">
+                        <span class="dp-bar-label" style="color:#999;">${d.label}</span>
+                        <div class="dp-bar-track">
+                            <div class="dp-bar-fill" style="width:${pct}%;background:#95a5a6;">${d.count > 30 ? intToPersian(d.count) : ''}</div>
+                        </div>
+                        <span class="dp-bar-count" style="color:#888;">${intToPersian(d.count)}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Empty / unknown
+        if (emptyCount + unknownCount > 0) {
+            html += `<div class="dp-section-title">❓ بدون تاریخ</div>`;
+            if (emptyCount > 0) {
+                const pct = maxCount > 0 ? (emptyCount / maxCount * 100) : 0;
+                html += `
+                    <div class="dp-bar-row">
+                        <span class="dp-bar-label" style="color:#bbb;">خالی</span>
+                        <div class="dp-bar-track">
+                            <div class="dp-bar-fill" style="width:${pct}%;background:#ddd;color:#999;">${emptyCount > 30 ? intToPersian(emptyCount) : ''}</div>
+                        </div>
+                        <span class="dp-bar-count" style="color:#bbb;">${intToPersian(emptyCount)}</span>
+                    </div>
+                `;
+            }
+            if (unknownCount > 0) {
+                html += `
+                    <div class="dp-bar-row">
+                        <span class="dp-bar-label" style="color:#bbb;">فرمت ناشناخته</span>
+                        <div class="dp-bar-track">
+                            <div class="dp-bar-fill" style="width:${unknownCount/maxCount*100}%;background:#ddd;color:#999;"></div>
+                        </div>
+                        <span class="dp-bar-count" style="color:#bbb;">${intToPersian(unknownCount)}</span>
+                    </div>
+                `;
+            }
+        }
+
+        document.getElementById('dp-chart').innerHTML = html;
+    }
+
+    function toggleDatePanel() {
+        const panel = document.getElementById('date-panel');
+        panel.classList.toggle('collapsed');
+    }
+
+    // ========== City Panel Logic ==========
+    let cityDataCache = []; // stored for search filtering
+
+    function updateCityPanel(cityPeople, unmappedCount) {
+        const entries = Object.entries(cityPeople)
+            .map(([city, people]) => ({ city, count: people.length }))
+            .sort((a, b) => b.count - a.count);
+
+        cityDataCache = entries;
+
+        const totalCities = entries.length;
+        const totalMapped = entries.reduce((s, e) => s + e.count, 0);
+        const avg = totalCities > 0 ? (totalMapped / totalCities).toFixed(1) : 0;
+
+        document.getElementById('cp-total-cities').textContent = intToPersian(totalCities);
+        document.getElementById('cp-total-mapped').textContent = intToPersian(totalMapped);
+        document.getElementById('cp-avg-per-city').textContent = intToPersian(Math.round(avg));
+
+        renderCityList(entries);
+    }
+
+    function renderCityList(entries) {
+        const maxCount = entries.length > 0 ? entries[0].count : 1;
+
+        const colorStops = [
+            { threshold: 100, color: '#8B0000' },
+            { threshold: 50,  color: '#B22222' },
+            { threshold: 20,  color: '#DC143C' },
+            { threshold: 10,  color: '#e67e22' },
+            { threshold: 5,   color: '#f39c12' },
+            { threshold: 0,   color: '#27ae60' },
+        ];
+
+        function barColor(count) {
+            for (const s of colorStops) {
+                if (count >= s.threshold) return s.color;
+            }
+            return '#27ae60';
+        }
+
+        if (entries.length === 0) {
+            document.getElementById('cp-list').innerHTML = '<div class="cp-no-result">نتیجه‌ای یافت نشد</div>';
+            return;
+        }
+
+        let html = '';
+        entries.forEach((e, i) => {
+            const pct = (e.count / maxCount * 100).toFixed(1);
+            const rankClass = i < 3 ? ' top3' : '';
+            html += `
+                <div class="cp-row">
+                    <span class="cp-rank${rankClass}">${intToPersian(i + 1)}</span>
+                    <span class="cp-city-name">${e.city}</span>
+                    <div class="cp-city-bar-track">
+                        <div class="cp-city-bar-fill" style="width:${pct}%;background:${barColor(e.count)};"></div>
+                    </div>
+                    <span class="cp-city-count">${intToPersian(e.count)}</span>
+                </div>
+            `;
+        });
+
+        document.getElementById('cp-list').innerHTML = html;
+    }
+
+    function filterCityList() {
+        const q = document.getElementById('cp-search').value.trim();
+        if (!q) {
+            renderCityList(cityDataCache);
+            return;
+        }
+        const filtered = cityDataCache.filter(e => e.city.includes(q));
+        renderCityList(filtered);
+    }
+
+    function toggleCityPanel() {
+        const panel = document.getElementById('city-panel');
+        panel.classList.toggle('collapsed');
+    }
+
+    // ========== Name Search Logic ==========
+    function searchNames() {
+        const q = document.getElementById('name-search').value.trim();
+        const container = document.getElementById('search-results');
+
+        if (!q || q.length < 2) {
+            container.classList.remove('active');
+            return;
+        }
+
+        const results = allPeopleData.filter(p => p.name.includes(q));
+        
+        if (results.length === 0) {
+            container.innerHTML = '<div class="search-result-count">نتیجه‌ای یافت نشد</div>';
+            container.classList.add('active');
+            return;
+        }
+
+        const shown = results.slice(0, 50);
+        let html = `<div class="search-result-count">${intToPersian(results.length)} نتیجه${results.length > 50 ? ' (۵۰ مورد اول)' : ''}</div>`;
+
+        shown.forEach(p => {
+            const highlighted = p.name.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g'), '<mark>$1</mark>');
+            html += `
+                <div class="search-result-item" onclick="flyToCity('${(p.city || '').replace(/'/g, "\\'")}')">
+                    <div class="search-result-name">${p.number ? intToPersian(parseInt(p.number)) + '. ' : ''}${highlighted}</div>
+                    <div class="search-result-meta">
+                        ${p.place ? '📍 ' + p.place : ''}${p.date ? ' � 📅 ' + p.date : ''}${p.city ? ' � 🏙️ ' + p.city : ''}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        container.classList.add('active');
+    }
+
+    function flyToCity(cityName) {
+        if (!cityName) return;
+        const resolved = normalizeCity(cityName);
+        if (resolved && cityCoords[resolved]) {
+            const [lat, lon] = cityCoords[resolved];
+            map.flyTo([lat, lon], 11, { duration: 1.2 });
+        }
+    }
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        const wrapper = document.querySelector('.search-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            document.getElementById('search-results').classList.remove('active');
+        }
+    });
+    // City coordinates [lat, lon]
+    const cityCoords = {
+        'تهران': [35.6892, 51.3890], 'مشهد': [36.2605, 59.6168], 'اصفهان': [32.6546, 51.6680],
+        'کرج': [35.8400, 50.9391], 'شیراز': [29.5918, 52.5837], 'تبریز': [38.0800, 46.2919],
+        'قم': [34.6416, 50.8746], 'اهواز': [31.3183, 48.6706], 'کرمانشاه': [34.3142, 47.0650],
+        'ارومیه': [37.5527, 45.0761], 'رشت': [37.2808, 49.5832], 'زاهدان': [29.4963, 60.8629],
+        'کرمان': [30.2839, 57.0834], 'همدان': [34.7990, 48.5150], 'اردبیل': [38.2498, 48.2933],
+        'یزد': [31.8974, 54.3569], 'قزوین': [36.2797, 50.0049], 'زنجان': [36.6736, 48.4787],
+        'سنندج': [35.3114, 46.9922], 'بندرعباس': [27.1865, 56.2808], 'گرگان': [36.8427, 54.4354],
+        'ساری': [36.5633, 53.0601], 'بجنورد': [37.4747, 57.3317], 'بیرجند': [32.8649, 59.2211],
+        'بوشهر': [28.9234, 50.8203], 'یاسوج': [30.6684, 51.5880], 'شهرکرد': [32.3256, 50.8645],
+        'خرم‌آباد': [33.4878, 48.3558], 'ایلام': [33.6374, 46.4227], 'سمنان': [35.5729, 53.3971],
+        'لاهیجان': [37.2086, 50.0056], 'قشم': [26.9580, 56.2707], 'شاهرود': [36.4181, 54.9764],
+        'بابل': [36.5513, 52.6836], 'نیشابور': [36.2140, 58.7961], 'رامسر': [36.9231, 50.6574],
+        'دزفول': [32.3839, 48.4011], 'شوشتر': [32.0458, 48.8566], 'اراک': [34.0917, 49.6892],
+        'قرچک': [35.4395, 51.5751], 'ورامین': [35.3231, 51.6467], 'اسلامشهر': [35.5451, 51.2356],
+        'ملارد': [35.6656, 50.9768], 'شهریار': [35.6596, 51.0592], 'پاکدشت': [35.4670, 51.6821],
+        'مرودشت': [29.8737, 52.8024], 'کازرون': [29.6192, 51.6541], 'رفسنجان': [30.4067, 55.9939],
+        'بروجرد': [33.8972, 48.7516], 'ملایر': [34.2969, 48.8233], 'بندرانزلی': [37.4731, 49.4619],
+        'بندر انزلی': [37.4731, 49.4619], 'منجیل': [36.7403, 49.4119], 'چالوس': [36.6547, 51.4206],
+        'آستانه اشرفیه': [37.2592, 49.9425], 'رودبار': [36.8119, 49.4172], 'هشتگرد': [35.9611, 50.6789],
+        'ساوه': [35.0211, 50.3564], 'دماوند': [35.7019, 52.0622], 'پرند': [35.4867, 51.0011],
+        'کهریزک': [35.5167, 51.3667], 'شهسوار': [36.8553, 50.8356], 'تالش': [37.8019, 48.9014],
+        'نورآباد ممسنی': [30.1153, 51.5258], 'نورآباد لرستان': [34.0736, 47.9714],
+        'کوهدشت': [33.5336, 47.6086], 'ازنا': [33.4589, 49.4561], 'لردگان': [31.5081, 50.8281],
+        'چناران': [36.6472, 59.1217], 'خشکبیجار': [37.3489, 49.4167], 'هرسین': [34.2700, 47.5878],
+        'نی‌ریز': [29.1972, 54.3306], 'الوند': [36.1678, 50.0833], 'شوش': [32.1942, 48.2567],
+        'سبزوار': [36.2125, 57.6819], 'تنکابن': [36.8119, 50.8728], 'نوشهر': [36.6486, 51.4961],
+        'جهرم': [28.5006, 53.5581], 'مسجدسلیمان': [31.9364, 49.3039], 'آبادان': [30.3392, 48.3043],
+        'خمین': [33.6411, 50.0828], 'میبد': [32.2500, 54.0167], 'نهاوند': [34.1878, 48.3778],
+        'پلدختر': [33.1522, 47.7156], 'الیگودرز': [33.4050, 49.7044], 'ایرانشهر': [27.2025, 60.6844],
+        'زرین‌شهر': [32.3939, 51.3750], 'داراب': [28.7519, 54.5433], 'نظرآباد': [35.9528, 50.6083],
+        'چابکسر': [37.0167, 50.4333], 'شیروان': [37.3961, 57.9275], 'لوشان': [36.6233, 49.5092],
+        'زیرآب': [36.2333, 52.4667], 'آمل': [36.4694, 52.3500], 'بهشهر': [36.6917, 53.5522],
+        'قائمشهر': [36.4647, 52.8597], 'اسلام‌آباد غرب': [34.1103, 46.5306],
+        'اسفراین': [37.0744, 57.5100], 'تربت جام': [35.2439, 60.6222], 'گناباد': [34.3528, 58.6836],
+        'اندیمشک': [32.4600, 48.3536], 'ایذه': [31.8317, 49.8686], 'ماهشهر': [30.5586, 49.1983],
+        'نجف‌آباد': [32.6342, 51.3667], 'تاکستان': [36.0700, 49.6958], 'آباده': [31.1608, 52.6506],
+        'رباط‌کریم': [35.4764, 51.0828], 'کاشمر': [35.2381, 58.4656], 'فریمان': [35.7042, 59.8531],
+        // New cities added from unmapped list
+        'نورآباد': [34.0736, 47.9714], 'زرنه': [33.4500, 46.4000], 'بدره': [33.2400, 47.1100],
+        'کوه‌چنار': [29.7833, 52.0167], 'قیر': [28.4700, 53.0500], 'چاف': [37.2000, 49.8000],
+        'خمینی‌شهر': [32.7000, 51.5167], 'آبپخش': [28.9333, 51.1500], 'بندر گناوه': [29.5833, 50.5167],
+        'گناوه': [29.5833, 50.5167], 'رومشکان': [33.6000, 47.5500], 'کرند غرب': [34.2833, 46.5333],
+        'کرند': [34.2833, 46.5333], 'فریدونکنار': [36.6833, 52.5167], 'گنبد کاووس': [37.2500, 55.1667],
+        'گنبد': [37.2500, 55.1667], 'کلاچای': [37.0833, 50.3500], 'کیش': [26.5333, 53.9667],
+        'فلاورجان': [32.5500, 51.5000], 'مریوان': [35.5211, 46.1764], 'چمستان': [36.4667, 52.1167],
+        'باغبهادران': [32.5167, 51.1833], 'کیاشهر': [37.4333, 49.9500], 'دیزیچه': [32.4833, 51.5833],
+        'فیروزآباد': [28.8439, 52.5697], 'راسک': [26.2500, 61.4000], 'بیجار': [35.8717, 47.6031],
+        'قصر شیرین': [34.5167, 45.5833], 'قصرشیرین': [34.5167, 45.5833], 'دانسفهان': [36.1833, 50.2833],
+        'فرخ‌شهر': [32.2667, 50.9833], 'فردوسیه': [35.5833, 51.0833], 'قدس': [35.7150, 51.1050],
+        'شهرقدس': [35.7150, 51.1050], 'شازند': [33.9333, 49.4167], 'بلداجی': [31.9500, 50.5000],
+        'پره‌سر': [37.6167, 49.0500], 'چرمهین': [32.6333, 51.3167], 'بابامیدان': [31.2833, 51.1667],
+        'گلپایگان': [33.4500, 50.2833], 'محمدیه': [36.0667, 50.0833], 'سودرجان': [32.2833, 50.8333],
+        'محلات': [33.9000, 50.4500], 'بابلسر': [36.7022, 52.6567], 'کنگاور': [34.5017, 47.9642],
+        'رستم‌کلا': [36.4500, 52.6500], 'کوچصفهان': [37.1833, 49.7667], 'سوادکوه': [36.0667, 53.0833],
+        'مشکین‌دشت': [35.8333, 50.8833], 'کلاله': [37.3833, 55.4833], 'دهق': [32.8833, 51.3333],
+        'لپویی': [29.9667, 52.8500], 'گتوند': [32.2500, 48.8167], 'حصارک': [35.8667, 51.0000],
+        'نرجه': [35.7000, 50.5333], 'شهر ابریشم': [32.5167, 51.6500], 'ابریشم': [32.5167, 51.6500],
+        'آزادشهر': [37.0833, 55.1667], 'اقبالیه': [36.0333, 49.9667], 'چمگردان': [32.4667, 51.2667],
+        'کوهسار': [35.8500, 51.1333], 'سورک': [36.7333, 53.1500], 'پردیس': [35.7500, 51.8333],
+        'بشاگرد': [26.5667, 57.3500], 'صباشهر': [35.6333, 50.8833], 'سامان': [32.4333, 50.9000],
+        'شاندیز': [36.3956, 59.3014], 'جاجرم': [36.9500, 56.3833], 'میمند': [28.8667, 53.5000],
+        'طارم': [36.9667, 48.9667], 'پاسارگاد': [30.1944, 53.1667], 'آبیک': [36.0333, 50.5333],
+        'ارسنجان': [29.9167, 53.3000], 'سیرجان': [29.4519, 55.6806],
+        // Batch 2: additional unmapped cities
+        'آق قلا': [37.0311, 54.4536], 'آق‌قلا': [37.0311, 54.4536],
+        'نایین': [32.8622, 53.0890], 'نکا': [36.6508, 53.2997],
+        'رودهن': [35.7350, 51.9092], 'رباط کریم': [35.4764, 51.0828],
+        'لنجان': [32.5000, 51.1000], 'صائین قلعه': [36.7628, 48.1792],
+        'صائین‌قلعه': [36.7628, 48.1792], 'بروجن': [31.9667, 51.2833],
+        'اشتهارد': [35.7167, 50.3500], 'گرمدره': [35.9500, 51.0833],
+    };
+
+    // Neighborhood to city mapping
+    const neighborhoodToCity = {
+        'تهرانپارس': 'تهران', 'اندرزگو': 'تهران', 'اشرفی‌اصفهانی': 'تهران',
+        'مسعودیه': 'تهران', 'فلاح': 'تهران', 'ستارخان': 'تهران',
+        'قاسم‌آباد': 'تهران', 'نارمک': 'تهران', 'پیروزی': 'تهران',
+        'نظام‌آباد': 'تهران', 'افسریه': 'تهران', 'نازی‌آباد': 'تهران',
+        'هفت‌حوض': 'تهران', 'رسالت': 'تهران', 'بومهن': 'تهران',
+        'آریاشهر': 'تهران', 'یافت‌آباد': 'تهران', 'شهرقدس': 'قدس',
+        'نسیم‌شهر': 'تهران', 'باقرشهر': 'تهران', 'قیامدشت': 'تهران',
+        'شهرک اندیشه': 'کرج', 'شاهین‌ویلا': 'کرج', 'گوهردشت': 'کرج',
+        'فردیس': 'کرج', 'مارلیک': 'کرج', 'محمدشهر': 'کرج',
+        'مهرشهر': 'کرج', 'باغستان': 'کرج', 'گلشهر': 'کرج', 'میدان آزادگان': 'کرج',
+        'ملک‌شهر': 'اصفهان', 'یزدانشهر': 'اصفهان', 'شاهین‌شهر': 'اصفهان',
+        'فولادشهر': 'اصفهان', 'شهرضا': 'اصفهان', 'مبارکه': 'اصفهان',
+        'بهارستان': 'اصفهان', 'سی‌وسه‌پل': 'اصفهان',
+        'هفت‌تیر': 'مشهد', 'وکیل‌آباد': 'مشهد', 'پارک‌ملت': 'مشهد',
+        'واوان': 'اسلامشهر', 'الوند': 'قزوین',
+        'رستم‌آباد گیلان': 'رشت', 'رستم‌آباد': 'رشت', 'خشکبیجار': 'رشت',
+        'چنارشاهیجان فارس': 'شیراز', 'چنارشاهیجان': 'شیراز', 'قیر فارس': 'قیر',
+        'هفشجان چهارمحال بختیاری': 'شهرکرد', 'هفشجان': 'شهرکرد',
+        'ملکشاهی ایلام': 'ایلام', 'ملکشاهی': 'ایلام', 'بدره ایلام': 'بدره', 'زرنه ایلام': 'زرنه',
+        'دره دریژ کرمانشاه': 'کرمانشاه', 'دره دریژ': 'کرمانشاه',
+        'اسدآباد همدان': 'همدان', 'اسدآباد': 'همدان',
+        'خرم‌آباد لرستان': 'خرم‌آباد', 'نورآباد لرستان': 'نورآباد',
+        'نورآباد ممسنی': 'یاسوج', 'شوش دانیال خوزستان': 'شوش', 'شوش دانیال': 'شوش',
+        'بابل مازندران': 'بابل', 'قلعه‌میر جاده‌ساوه': 'ساوه',
+        'شهر ری': 'تهران', 'شهرری': 'تهران', 'تهرامن': 'تهران',
+        'زیرآب سوادکوه': 'سوادکوه', 'هریکنده مازندران': 'ساری', 'هریکنده': 'ساری',
+        'لوشان گیلان': 'رشت', 'الیگودرز لرستان': 'خرم‌آباد',
+        'داراب فارس': 'داراب', 'شیروان خراسان شمالی': 'شیروان',
+        // New mappings for unmapped entries
+        'کوه‌چنار': 'کوه‌چنار', 'کوهچنار': 'کوه‌چنار',
+        'فیروزآباد راسک': 'راسک', 'لپویی فارس': 'لپویی',
+        'کرند غرب': 'کرند', 'باغبهادرانی': 'باغبهادران',
+        'چمگردانی': 'چمگردان', 'قهدریجانی': 'فلاورجان',
+        'سامانی': 'سامان', 'شاندیز': 'شاندیز',
+        'برجوئی': 'چمگردان', 'بنه کهل': 'قدس',
+        // Batch 2: additional neighborhood mappings
+        'گرمدره کرج': 'گرمدره', 'گرمدره': 'گرمدره',
+        'تهر': 'تهران', 'میانگله': 'نکا',
+        'نکا مازنداران': 'نکا', 'رودهن تهران': 'رودهن',
+        'آق‌قلا گلستان': 'آق قلا', 'نایین اصفهان': 'نایین',
+        'لنجان اصفهان': 'لنجان', 'صائین‌قلعه زنجان': 'صائین قلعه',
+    };
+
+    function normalizeCity(cityStr) {
+        if (!cityStr) return null;
+        cityStr = cityStr.trim();
+        if (cityCoords[cityStr]) return cityStr;
+        
+        for (const [neighborhood, mainCity] of Object.entries(neighborhoodToCity)) {
+            if (cityStr.includes(neighborhood)) return mainCity;
+        }
+        
+        const parts = cityStr.split(/\s+/);
+        for (const part of [...parts].reverse()) {
+            if (cityCoords[part.trim()]) return part.trim();
+        }
+        for (const part of parts) {
+            if (cityCoords[part.trim()]) return part.trim();
+        }
+        return cityStr;
+    }
+
+    function parseCSV(text) {
+        const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue; // Skip empty lines
+            
+            const values = line.split(',');
+            const row = {};
+            headers.forEach((h, idx) => {
+                row[h] = values[idx] ? values[idx].trim() : '';
+            });
+            
+            // Only add if row has a name
+            if (row['نام'] || row['name']) {
+                data.push(row);
+            }
+        }
+        return data;
+    }
+
+    // Initialize map
+    const map = L.map('map').setView([32.4279, 53.6880], 6);
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '� OpenStreetMap, � CartoDB'
+    }).addTo(map);
+
+    // Load and process CSV
+    fetch('data.csv')
+        .then(response => {
+            if (!response.ok) throw new Error('Cannot load data.csv');
+            return response.text();
+        })
+        .then(csvText => {
+            const data = parseCSV(csvText);
+            
+            // Group by city
+            const cityPeople = {};
+            const unmapped = [];
+            let totalMapped = 0;
+            
+            data.forEach(row => {
+                const number = row['شماره'] || '';
+                const name = row['نام'] || row['name'] || '';
+                const date = row['تاریخ کشته‌شدن'] || row['date'] || '';
+                const place = row['محل کشته‌شدن'] || '';
+                const originalCity = row['شهر'] || row['city'] || '';
+                const city = normalizeCity(originalCity);
+
+                // Store for search
+                if (name) {
+                    allPeopleData.push({ number, name, date, place, city: originalCity });
+                }
+                
+                if (city && cityCoords[city]) {
+                    if (!cityPeople[city]) cityPeople[city] = [];
+                    cityPeople[city].push({ number, name, date, place, originalCity });
+                    totalMapped++;
+                } else if (name) {
+                    unmapped.push({ number, name, date, place, originalCity: originalCity || '(خالی)' });
+                }
+            });
+
+            // Update stats
+            document.getElementById('stats').textContent = 
+                `Total: ${data.length} | Mapped: ${totalMapped} | Unmapped: ${unmapped.length} | Cities: ${Object.keys(cityPeople).length}`;
+            
+            // Update gender dashboard
+            updateGenderPanel(data);
+
+            // Update date dashboard
+            updateDatePanel(data);
+
+            // Update city dashboard
+            updateCityPanel(cityPeople, unmapped.length);
+            
+            // Show unmapped list if any
+            if (unmapped.length > 0) {
+                const unmappedBtn = document.createElement('button');
+                unmappedBtn.textContent = `نمایش ${unmapped.length} نفر نقشه‌نشده`;
+                unmappedBtn.style.cssText = 'margin-top:8px;padding:5px 10px;background:#e74c3c;color:white;border:none;border-radius:5px;cursor:pointer;font-family:Tahoma;font-size:11px;';
+                unmappedBtn.onclick = () => {
+                    document.getElementById('unmapped-panel').style.display = 
+                        document.getElementById('unmapped-panel').style.display === 'none' ? 'block' : 'none';
+                };
+                document.querySelector('.title-box').appendChild(unmappedBtn);
+                
+                const unmappedHtml = unmapped.map(p => 
+                    `<tr><td>${p.number}</td><td>${p.name}</td><td>${p.originalCity}</td><td>${p.date}</td></tr>`
+                ).join('');
+                document.getElementById('unmapped-list').innerHTML = unmappedHtml;
+            }
+
+            // Add markers
+            const heatData = [];
+            
+            Object.entries(cityPeople).forEach(([city, people]) => {
+                const [lat, lon] = cityCoords[city];
+                const count = people.length;
+                
+                let radius, color;
+                if (count >= 100) { radius = 22; color = '#8B0000'; }
+                else if (count >= 50) { radius = 18; color = '#B22222'; }
+                else if (count >= 20) { radius = 14; color = '#DC143C'; }
+                else { radius = 10; color = '#CD5C5C'; }
+                
+                // Create popup content
+                const namesHtml = people.map(p => 
+                    `<div class="popup-item">
+                        <b>${p.number ? p.number + '. ' : ''}${p.name}</b>
+                        ${p.place ? '<br><span style="color:#555;">📍 ' + p.place + '</span>' : ''}
+                        ${p.date ? '<br><span class="popup-date">📅 ' + p.date + '</span>' : ''}
+                    </div>`
+                ).join('');
+                
+                const popupHtml = `
+                    <div style="width:220px;font-family:Tahoma;">
+                        <div class="popup-header"><b>${city}</b><br><span>${count} نفر</span></div>
+                        <div class="popup-list">${namesHtml}</div>
+                    </div>
+                `;
+                
+                L.circleMarker([lat, lon], {
+                    radius: radius,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    weight: 2
+                })
+                .bindPopup(popupHtml)
+                .bindTooltip(`${city}: ${count} نفر`)
+                .addTo(map);
+                
+                // Add heat data
+                people.forEach(() => {
+                    heatData.push([lat, lon, 0.5]);
+                });
+            });
+
+            // Add heat layer
+            L.heatLayer(heatData, { radius: 15, blur: 10, maxZoom: 10 }).addTo(map);
+            
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+        })
+        .catch(error => {
+            document.getElementById('loading').innerHTML = 
+                `<p style="color:red;">Error loading data.csv</p><p>${error.message}</p>
+                <p style="font-size:12px;margin-top:10px;">Make sure data.csv is in the same folder as this HTML file.</p>`;
+        });
+    </script>
+
+
+</body></html>
