@@ -376,7 +376,7 @@
         </div>
     </div>
 
-    <div class="loading" id="loading">در حال بارگذاری...</div>
+    <div class="loading" id="loading">در حال بارگذاری از Google Sheets...</div>
     
     <div id="unmapped-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
         z-index:10001;background:white;padding:20px;border-radius:10px;box-shadow:0 5px 30px rgba(0,0,0,0.4);
@@ -386,7 +386,7 @@
             <button onclick="document.getElementById('unmapped-panel').style.display='none'" 
                 style="background:#ccc;border:none;padding:5px 15px;border-radius:5px;cursor:pointer;">بستن</button>
         </div>
-        <p style="font-size:12px;color:#666;margin-bottom:10px;">این افراد به دلیل نام شهر ناشناخته روی نقشه نمایش داده نشدند. می‌توانید نام شهر را در فایل data.csv اصلاح کنید.</p>
+        <p style="font-size:12px;color:#666;margin-bottom:10px;">این افراد به دلیل نام شهر ناشناخته روی نقشه نمایش داده نشدند. می‌توانید نام شهر را در Google Sheet اصلاح کنید.</p>
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
             <thead>
                 <tr style="background:#f5f5f5;">
@@ -975,20 +975,43 @@
 
     function parseCSV(text) {
         const lines = text.trim().split('\n').filter(line => line.trim() !== '');
-        const headers = lines[0].split(',').map(h => h.trim());
+        
+        function splitCSVLine(line) {
+            const fields = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                        current += '"'; i++; // escaped quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (ch === ',' && !inQuotes) {
+                    fields.push(current.trim());
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            fields.push(current.trim());
+            return fields;
+        }
+
+        const headers = splitCSVLine(lines[0]);
         const data = [];
         
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (!line) continue; // Skip empty lines
+            if (!line) continue;
             
-            const values = line.split(',');
+            const values = splitCSVLine(line);
             const row = {};
             headers.forEach((h, idx) => {
                 row[h] = values[idx] ? values[idx].trim() : '';
             });
             
-            // Only add if row has a name
             if (row['نام'] || row['name']) {
                 data.push(row);
             }
@@ -1003,13 +1026,23 @@
         attribution: '&copy; OpenStreetMap, &copy; CartoDB'
     }).addTo(map);
 
-    // Load and process CSV
-    fetch('data.csv')
-        .then(response => {
-            if (!response.ok) throw new Error('Cannot load data.csv');
+    // Load and process CSV from Google Sheets (with local fallback)
+    const SHEET_ID = '1Fy-NYmGWnT604Nao6HbLSZFSYwnXKpD0';
+    const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+    const SHEET_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+    function loadData(url) {
+        return fetch(url).then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return response.text();
-        })
-        .then(csvText => {
+        });
+    }
+
+    loadData(SHEET_CSV_URL).then(t => ({text: t, src: 'Google Sheets'}))
+        .catch(() => loadData(SHEET_EXPORT_URL).then(t => ({text: t, src: 'Google Sheets (export)'})))
+        .catch(() => fetch('data.csv').then(r => { if(!r.ok) throw new Error('Local fallback failed'); return r.text(); }).then(t => ({text: t, src: 'data.csv (محلی)'})))
+        .then(({text: csvText, src: dataSource}) => {
+            document.getElementById('loading').innerHTML = 'در حال پردازش...';
             const data = parseCSV(csvText);
             
             // Group by city
@@ -1041,7 +1074,7 @@
 
             // Update stats
             document.getElementById('stats').textContent = 
-                `Total: ${data.length} | Mapped: ${totalMapped} | Unmapped: ${unmapped.length} | Cities: ${Object.keys(cityPeople).length}`;
+                `Total: ${data.length} | Mapped: ${totalMapped} | Unmapped: ${unmapped.length} | Cities: ${Object.keys(cityPeople).length} | 📡 ${dataSource}`;
             
             // Update gender dashboard
             updateGenderPanel(data);
@@ -1123,8 +1156,11 @@
         })
         .catch(error => {
             document.getElementById('loading').innerHTML = 
-                `<p style="color:red;">Error loading data.csv</p><p>${error.message}</p>
-                <p style="font-size:12px;margin-top:10px;">Make sure data.csv is in the same folder as this HTML file.</p>`;
+                `<p style="color:red;">خطا در بارگذاری داده‌ها</p><p>${error.message}</p>
+                <p style="font-size:12px;margin-top:10px;direction:rtl;">
+                    ۱. مطمئن شوید که Google Sheet با دسترسی «هر کسی با لینک» به اشتراک گذاشته شده.<br>
+                    ۲. یا فایل data.csv را در همان پوشه این فایل HTML قرار دهید.
+                </p>`;
         });
     </script>
 </body>
